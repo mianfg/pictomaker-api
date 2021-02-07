@@ -8,7 +8,7 @@ from resources.errors import errors
 
 app = Flask(__name__)
 app.config.from_envvar('ENV_FILE_LOCATION')
-mail = Mail(app)
+# mail = Mail(app)
 
 # imports requiring app and mail
 from resources.routes import initialize_routes
@@ -18,7 +18,7 @@ bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
 app.config['MONGODB_SETTINGS'] = {
-    'host': 'mongodb://localhost/movie-bag'
+    'host': 'mongodb://localhost/pictomaker'
 }
 
 initialize_db(app)
