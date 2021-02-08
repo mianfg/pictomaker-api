@@ -7,6 +7,18 @@ class SchemaValidationError(Exception):
 class InvalidLanguageError(Exception):
     pass
 
+class EmailAlreadyExistsError(Exception):
+    pass
+
+class UnauthorizedError(Exception):
+    pass
+
+class EmailDoesNotExistError(Exception):
+    pass
+
+class BadTokenError(Exception):
+    pass
+
 
 errors = {
     "InternalServerError": {
@@ -20,5 +32,21 @@ errors = {
     "InvalidLanguageError": {
         "message": "Language is invalid",
         "status": 400
+    },
+    "EmailAlreadyExistsError": {
+        "message": "User with given email address already exists",
+        "status": 400
+    },
+    "UnauthorizedError": {
+        "message": "Invalid username or password",
+        "status": 401
+    },
+    "EmailDoesnotExistError": {
+        "message": "Couldn't find the user with given email address",
+        "status": 400
+    },
+    "BadTokenError": {
+        "message": "Invalid token",
+        "status": 403
     }
 }
