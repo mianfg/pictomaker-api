@@ -39,28 +39,78 @@ class LanguageApi(Resource):
             body = request.get_json()
             language = body.get('language')
             text = body.get('text')
-            if not language or not text:
+            if not text:
                 raise SchemaValidationError
-            if not nlp[language]:
-                raise InvalidLanguageError
-            doc = nlp[language](text)
-            doc_dict_separated = []
-            temp = []
-            for token in doc:
-                temp.append({'text': token.text, 'lemma': token.lemma_, 'pos': token.pos_, 'is_punct': token.is_punct})
-                if token.whitespace_ or (token.i < len(doc) - 1 and not doc[token.i+1].is_punct and not token.is_punct) or token.text in ["((", "))"]:
+            pair = [None, None]
+            pairs = []
+            for i in range(len(text)):
+                if i == 0 or (i > 0 and text[i-1] != '\\'):
+                    if text[i] == '[':
+                        pair[0] = i
+                    elif text[i] == ']':
+                        pair[1] = i
+                        if pair[0] and pair[1]:
+                            pairs.append(pair)
+                        pair = [None, None]
+            text = list(text)
+            for pair in pairs:
+                for i in range(pair[0], pair[1]):
+                    if text[i] == ' ':
+                        text[i] = '\t'
+            text = ''.join(text)
+            text = text.replace('\\[', '\n0')
+            text = text.replace('\\]', '\n1')
+            text = text.replace('[', '')
+            text = text.replace(']', '')
+            text = text.replace('\n0', '[')
+            text = text.replace('\n1', ']')
+            if not language:
+                split_text = text.split(' ')
+                doc_dict = []
+                for word in split_text:
+                    if word != '':
+                        word = word.replace('\t', ' ')
+                        doc_dict.append({'text': word, 'lemma': word, 'pos': 'OTHER'})
+            else:
+                if language not in nlp.keys() or not nlp[language]:
+                    raise InvalidLanguageError
+                doc = nlp[language](text)
+                doc_dict_separated = []
+                temp = []
+                for token in doc:
+                    temp.append({'text': token.text, 'lemma': token.lemma_, 'pos': token.pos_, 'is_punct': token.is_punct})
+                    if token.whitespace_ or (token.i < len(doc) - 1 and not doc[token.i+1].is_punct and not token.is_punct):
+                        doc_dict_separated.append(temp)
+                        temp = []
+                if len(temp) > 0:
                     doc_dict_separated.append(temp)
-                    temp = []
-            if len(temp) > 0:
-                doc_dict_separated.append(temp)
-            doc_dict = []
-            for element in doc_dict_separated:
-                text, lemma, pos = "", element[0]['lemma'], element[0]['pos']
-                for item in element:
-                    text += item['text']
-                    if not item['is_punct']:
-                        lemma, pos = item['lemma'], item['pos']
-                doc_dict.append({'text': text, 'lemma': lemma, 'pos': pos})
+                doc_dict = []
+                for element in doc_dict_separated:
+                    text, lemma, pos = "", element[0]['lemma'], element[0]['pos']
+                    for item in element:
+                        text += item['text']
+                        if not item['is_punct']:
+                            lemma, pos = item['lemma'], item['pos']
+                    doc_dict.append({'text': text, 'lemma': lemma, 'pos': pos})
+                for i in range(len(doc_dict)):
+                    if i < len(doc_dict) and doc_dict[i]['pos'] == 'SPACE':
+                        doc_dict[i]['text'] = doc_dict[i]['text'].replace('\t', ' ')
+                        doc_dict[i]['lemma'] = doc_dict[i]['lemma'].replace('\t', ' ')
+                        doc_dict[i]['pos'] = ''
+                        if i > 0:
+                            doc_dict[i]['text'] = doc_dict[i-1]['text'] + doc_dict[i]['text']
+                            doc_dict[i]['lemma'] = doc_dict[i-1]['lemma'] + doc_dict[i]['lemma']
+                            doc_dict[i]['pos'] = doc_dict[i-1]['pos']
+                            del doc_dict[i-1]
+                            i -= 1
+                        if i < len(doc_dict):
+                            doc_dict[i]['text'] += doc_dict[i+1]['text']
+                            doc_dict[i]['lemma'] += doc_dict[i+1]['lemma']
+                            if doc_dict[i]['pos'] == '' or doc_dict[i]['pos'] == doc_dict[i+1]['pos']:
+                                doc_dict[i]['pos'] = doc_dict[i+1]['pos']
+                            else:
+                                doc_dict[i]['pos'] = 'OTHER'
+                            del doc_dict[i+1]
             return Response(json.dumps(doc_dict), mimetype="application/json", status=200)
         except SchemaValidationError:
             raise SchemaValidationError
