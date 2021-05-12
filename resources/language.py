@@ -58,12 +58,12 @@ class LanguageApi(Resource):
                     if text[i] == ' ':
                         text[i] = '\t'
             text = ''.join(text)
-            text = text.replace('\\[', '\n0')
-            text = text.replace('\\]', '\n1')
+            text = text.replace('\\[', '\n0\n')
+            text = text.replace('\\]', '\n1\n')
             text = text.replace('[', '')
             text = text.replace(']', '')
-            text = text.replace('\n0', '[')
-            text = text.replace('\n1', ']')
+            text = text.replace('\n0\n', '[')
+            text = text.replace('\n1\n', ']')
             if not language:
                 split_text = text.split(' ')
                 doc_dict = []
